@@ -1,0 +1,656 @@
+<html><head><base href="https://journal-trading-pro.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deriv Journal de Trading Professionnel avec Authentification</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f7f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    header {
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px 0;
+        text-align: center;
+    }
+    h1 {
+        margin: 0;
+    }
+    .main-content {
+        display: flex;
+        margin-top: 20px;
+    }
+    .sidebar {
+        width: 300px;
+        background-color: #34495e;
+        color: white;
+        padding: 20px;
+        border-radius: 5px;
+        height: fit-content;
+    }
+    .trade-log {
+        flex-grow: 1;
+        margin-left: 20px;
+        background-color: white;
+        border-radius: 5px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+    label {
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    input, select, textarea {
+        margin-bottom: 15px;
+        padding: 8px;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+    }
+    button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    button:hover {
+        background-color: #2980b9;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    .chart-container {
+        margin-top: 20px;
+        height: 300px;
+    }
+    .image-preview {
+        max-width: 100%;
+        max-height: 200px;
+        margin-top: 10px;
+        display: none;
+    }
+    #indiceFilter, #historyIndiceFilter, #historyTimeFilter {
+        margin-bottom: 15px;
+        width: 100%;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.9);
+    }
+    .modal-content {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 700px;
+    }
+    .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .close:hover,
+    .close:focus {
+        color: #bbb;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .social-container {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #2c3e50;
+        color: white;
+        border-radius: 5px;
+    }
+    .made-by {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    .social-icons {
+        display: flex;
+        gap: 10px;
+    }
+    .social-icons a {
+        display: inline-block;
+    }
+    .social-icons img {
+        width: 30px;
+        height: 30px;
+        transition: transform 0.3s ease;
+    }
+    .social-icons img:hover {
+        transform: scale(1.1);
+    }
+    .filter-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .filter-container select {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+    }
+    .auth-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .auth-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    .auth-buttons button {
+        flex: 1;
+        margin: 0 5px;
+    }
+    #userEmail {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    #logoutBtn {
+        background-color: #e74c3c;
+    }
+    #logoutBtn:hover {
+        background-color: #c0392b;
+    }
+</style>
+</head>
+<body>
+    <header>
+        <h1>Deriv Journal de Trading Professionnel</h1>
+    </header>
+    
+    <div class="container">
+        <div class="auth-container">
+            <div id="userEmail"></div>
+            <div id="authButtons" class="auth-buttons">
+                <button id="loginBtn">Se connecter</button>
+                <button id="signupBtn">S'inscrire</button>
+            </div>
+            <button id="logoutBtn" style="display: none;">Se déconnecter</button>
+        </div>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <h2>Performance</h2>
+                <select id="indiceFilter">
+                    <option value="all">Tous les indices</option>
+                    <option value="Volatility10">Volatility10</option>
+                    <option value="Volatility10(1s)">Volatility10(1s)</option>
+                    <option value="Volatility25">Volatility25</option>
+                    <option value="Volatility25(1s)">Volatility25(1s)</option>
+                    <option value="Volatility50">Volatility50</option>
+                    <option value="Volatility50(1s)">Volatility50(1s)</option>
+                    <option value="Volatility75">Volatility75</option>
+                    <option value="Volatility75(1s)">Volatility75(1s)</option>
+                    <option value="Volatility100">Volatility100</option>
+                    <option value="Volatility100(1s)">Volatility100(1s)</option>
+                    <option value="Volatility150(1s)">Volatility150(1s)</option>
+                    <option value="Volatility200(1s)">Volatility200(1s)</option>
+                    <option value="Volatility250(1s)">Volatility250(1s)</option>
+                    <option value="Volatility300(1s)">Volatility300(1s)</option>
+                    <option value="Step index">Step index</option>
+                    <option value="Step index 200">Step index 200</option>
+                    <option value="Step index 500">Step index 500</option>
+                    <option value="Boom300">Boom300</option>
+                    <option value="Boom500">Boom500</option>
+                    <option value="Boom1000">Boom1000</option>
+                    <option value="Crash300">Crash300</option>
+                    <option value="Crash500">Crash500</option>
+                    <option value="Crash1000">Crash1000</option>
+                    <option value="Jump10">Jump10</option>
+                    <option value="Jump25">Jump25</option>
+                    <option value="Jump50">Jump50</option>
+                    <option value="Jump75">Jump75</option>
+                    <option value="Jump100">Jump100</option>
+                    <option value="Range break100">Range break100</option>
+                    <option value="Range break200">Range break200</option>
+                </select>
+                <p>Taux de réussite: <span id="winRate">0</span>%</p>
+                <p>Nombre de trades: <span id="tradeCount">0</span></p>
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                <div class="social-container">
+                    <div class="made-by">Realisé par Fbo</div>
+                    <div class="social-icons">
+                        <a href="https://www.instagram.com/fbo_le_sheild/" target="_blank" title="Instagram">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram">
+                        </a>
+                        <a href="https://t.me/+QjKCePDXU9o0MDA0" target="_blank" title="Groupe Telegram">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Groupe Telegram">
+                        </a>
+                        <a href="https://t.me/fabricefbo" target="_blank" title="Telegram">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
+                        </a>
+                    </div>
+                </div>
+            </aside>
+            
+            <main class="trade-log">
+                <h2>Ajouter un Trade</h2>
+                <form id="tradeForm">
+                    <label for="date">Date:</label>
+                    <input type="date" id="date" required>
+                    
+                    <label for="indice">Indice:</label>
+                    <select id="indice" required>
+                        <option value="">Sélectionnez un indice</option>
+                        <option value="Volatility10">Volatility10</option>
+                        <option value="Volatility10(1s)">Volatility10(1s)</option>
+                        <option value="Volatility25">Volatility25</option>
+                        <option value="Volatility25(1s)">Volatility25(1s)</option>
+                        <option value="Volatility50">Volatility50</option>
+                        <option value="Volatility50(1s)">Volatility50(1s)</option>
+                        <option value="Volatility75">Volatility75</option>
+                        <option value="Volatility75(1s)">Volatility75(1s)</option>
+                        <option value="Volatility100">Volatility100</option>
+                        <option value="Volatility100(1s)">Volatility100(1s)</option>
+                        <option value="Volatility150(1s)">Volatility150(1s)</option>
+                        <option value="Volatility200(1s)">Volatility200(1s)</option>
+                        <option value="Volatility250(1s)">Volatility250(1s)</option>
+                        <option value="Volatility300(1s)">Volatility300(1s)</option>
+                        <option value="Step index">Step index</option>
+                        <option value="Step index 200">Step index 200</option>
+                        <option value="Step index 500">Step index 500</option>
+                        <option value="Boom300">Boom300</option>
+                        <option value="Boom500">Boom500</option>
+                        <option value="Boom1000">Boom1000</option>
+                        <option value="Crash300">Crash300</option>
+                        <option value="Crash500">Crash500</option>
+                        <option value="Crash1000">Crash1000</option>
+                        <option value="Jump10">Jump10</option>
+                        <option value="Jump25">Jump25</option>
+                        <option value="Jump50">Jump50</option>
+                        <option value="Jump75">Jump75</option>
+                        <option value="Jump100">Jump100</option>
+                        <option value="Range break100">Range break100</option>
+                        <option value="Range break200">Range break200</option>
+                    </select>
+                    
+                    <label for="direction">Direction:</label>
+                    <select id="direction" required>
+                        <option value="long">Long</option>
+                        <option value="short">Short</option>
+                    </select>
+                    
+                    <label for="profitLoss">Gain/Perte:</label>
+                    <input type="number" id="profitLoss" step="0.01" required>
+                    
+                    <label for="startCapture">Capture début du trade:</label>
+                    <input type="file" id="startCapture" accept="image/*">
+                    <img id="startCapturePreview" class="image-preview" alt="Aperçu de la capture de début">
+                    
+                    <label for="endCapture">Capture fin du trade:</label>
+                    <input type="file" id="endCapture" accept="image/*">
+                    <img id="endCapturePreview" class="image-preview" alt="Aperçu de la capture de fin">
+                    
+                    <label for="notes">Notes:</label>
+                    <textarea id="notes" rows="4"></textarea>
+                    
+                    <button type="submit">Ajouter le Trade</button>
+                </form>
+                
+                <h2>Historique des Trades</h2>
+                <div class="filter-container">
+                    <select id="historyIndiceFilter">
+                        <option value="all">Tous les indices</option>
+                        <!-- Options des indices (comme dans le formulaire d'ajout) -->
+                    </select>
+                    <select id="historyTimeFilter">
+                        <option value="all">Toute la période</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                        <option value="year">Cette année</option>
+                    </select>
+                </div>
+                <table id="tradeHistory">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Indice</th>
+                            <th>Direction</th>
+                            <th>Gain/Perte</th>
+                            <th>Capture début</th>
+                            <th>Capture fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les trades seront ajoutés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal pour afficher les images en taille réelle -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        // Configuration Firebase (à remplacer par vos propres détails de configuration)
+        const firebaseConfig = {
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "VOTRE_AUTH_DOMAIN",
+            projectId: "VOTRE_PROJECT_ID",
+            storageBucket: "VOTRE_STORAGE_BUCKET",
+            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+            appId: "VOTRE_APP_ID"
+        };
+
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let trades = [];
+        const tradeForm = document.getElementById('tradeForm');
+        const tradeHistory = document.getElementById('tradeHistory').getElementsByTagName('tbody')[0];
+        const winRateSpan = document.getElementById('winRate');
+        const tradeCountSpan = document.getElementById('tradeCount');
+        const indiceFilter = document.getElementById('indiceFilter');
+        const historyIndiceFilter = document.getElementById('historyIndiceFilter');
+        const historyTimeFilter = document.getElementById('historyTimeFilter');
+        let performanceChart;
+
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userEmail = document.getElementById('userEmail');
+        const authButtons = document.getElementById('authButtons');
+
+        // Modal elements
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById("modalImage");
+        const span = document.getElementsByClassName("close")[0];
+
+        // Prévisualisation des images
+        document.getElementById('startCapture').addEventListener('change', function(e) {
+            previewImage(this, 'startCapturePreview');
+        });
+
+        document.getElementById('endCapture').addEventListener('change', function(e) {
+            previewImage(this, 'endCapturePreview');
+        });
+
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = function () {
+                preview.src = reader.result;
+                preview.style.display = 'block';
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = "";
+                preview.style.display = 'none';
+            }
+        }
+
+        // Fonction pour mettre à jour l'interface utilisateur en fonction de l'état de connexion
+        function updateUI(user) {
+            if (user) {
+                userEmail.textContent = `Connecté en tant que : ${user.email}`;
+                authButtons.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                // Charger les trades de l'utilisateur depuis Firestore
+                loadUserTrades(user.uid);
+            } else {
+                userEmail.textContent = '';
+                authButtons.style.display = 'flex';
+                logoutBtn.style.display = 'none';
+                // Réinitialiser les trades à un tableau vide
+                trades = [];
+                updateTradeHistory();
+                updatePerformance();
+            }
+        }
+
+        // Surveiller les changements d'état d'authentification
+        auth.onAuthStateChanged(updateUI);
+
+        // Fonction de connexion
+        loginBtn.addEventListener('click', () => {
+            const email = prompt("Entrez votre email :");
+            const password = prompt("Entrez votre mot de passe :");
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => alert("Erreur de connexion : " + error.message));
+        });
+
+        // Fonction d'inscription
+        signupBtn.addEventListener('click', () => {
+            const email = prompt("Entrez votre email :");
+            const password = prompt("Choisissez un mot de passe :");
+            auth.createUserWithEmailAndPassword(email, password)
+                .catch(error => alert("Erreur d'inscription : " + error.message));
+        });
+
+        // Fonction de déconnexion
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // Fonction pour charger les trades de l'utilisateur depuis Firestore
+        function loadUserTrades(userId) {
+            db.collection('users').doc(userId).collection('trades').get()
+                .then(querySnapshot => {
+                    trades = querySnapshot.docs.map(doc => doc.data());
+                    updateTradeHistory();
+                    updatePerformance();
+                })
+                .catch(error => console.error("Erreur lors du chargement des trades :", error));
+        }
+
+        tradeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newTrade = {
+                date: document.getElementById('date').value,
+                indice: document.getElementById('indice').value,
+                direction: document.getElementById('direction').value,
+                profitLoss: parseFloat(document.getElementById('profitLoss').value),
+                startCapture: document.getElementById('startCapturePreview').src,
+                endCapture: document.getElementById('endCapturePreview').src,
+                notes: document.getElementById('notes').value
+            };
+            
+            const user = auth.currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).collection('trades').add(newTrade)
+                    .then(() => {
+                        trades.push(newTrade);
+                        updateTradeHistory();
+                        updatePerformance();
+                        tradeForm.reset();
+                        document.getElementById('startCapturePreview').src = "";
+                        document.getElementById('startCapturePreview').style.display = 'none';
+                        document.getElementById('endCapturePreview').src = "";
+                        document.getElementById('endCapturePreview').style.display = 'none';
+                    })
+                    .catch(error => console.error("Erreur lors de l'ajout du trade :", error));
+            } else {
+                alert("Vous devez être connecté pour ajouter un trade.");
+            }
+        });
+
+        // Remplir les options d'indices pour le filtre d'historique
+        const indiceOptions = document.getElementById('indice').innerHTML;
+        historyIndiceFilter.innerHTML = '<option value="all">Tous les indices</option>' + indiceOptions;
+
+        indiceFilter.addEventListener('change', updatePerformance);
+        historyIndiceFilter.addEventListener('change', updateTradeHistory);
+        historyTimeFilter.addEventListener('change', updateTradeHistory);
+
+        function updateTradeHistory() {
+            const selectedIndice = historyIndiceFilter.value;
+            const selectedTime = historyTimeFilter.value;
+            
+            let filteredTrades = trades;
+
+            // Filtrer par indice
+            if (selectedIndice !== 'all') {
+                filteredTrades = filteredTrades.filter(trade => trade.indice === selectedIndice);
+            }
+
+            // Filtrer par période
+            const now = new Date();
+            switch(selectedTime) {
+                case 'week':
+                    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+                    filteredTrades = filteredTrades.filter(trade => new Date(trade.date) >= weekStart);
+                    break;
+                case 'month':
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    filteredTrades = filteredTrades.filter(trade => new Date(trade.date) >= monthStart);
+                    break;
+                case 'year':
+                    const yearStart = new Date(now.getFullYear(), 0, 1);
+                    filteredTrades = filteredTrades.filter(trade => new Date(trade.date) >= yearStart);
+                    break;
+            }
+
+            // Vider la table existante
+            while (tradeHistory.firstChild) {
+                tradeHistory.removeChild(tradeHistory.firstChild);
+            }
+
+            // Remplir la table avec les trades filtrés
+            filteredTrades.forEach(addTradeToTable);
+
+            // Mettre à jour les performances avec les trades filtrés
+            updatePerformance();
+        }
+
+        function addTradeToTable(trade) {
+            const row = tradeHistory.insertRow();
+            row.innerHTML = `
+                <td>${trade.date}</td>
+                <td>${trade.indice}</td>
+                <td>${trade.direction}</td>
+                <td>${trade.profitLoss.toFixed(2)}</td>
+                <td>${trade.startCapture ? `<img src="${trade.startCapture}" alt="Capture début" style="width:50px;height:50px;cursor:pointer;" onclick="showFullImage('${trade.startCapture}')">` : 'Pas de capture'}</td>
+                <td>${trade.endCapture ? `<img src="${trade.endCapture}" alt="Capture fin" style="width:50px;height:50px;cursor:pointer;" onclick="showFullImage('${trade.endCapture}')">` : 'Pas de capture'}</td>
+            `;
+        }
+
+        function showFullImage(src) {
+            modal.style.display = "block";
+            modalImg.src = src;
+        }
+
+        // Fermer la modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // Fermer la modal en cliquant en dehors de l'image
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        function updatePerformance() {
+            const selectedIndice = indiceFilter.value;
+            let filteredTrades = trades;
+            if (selectedIndice !== 'all') {
+                filteredTrades = trades.filter(trade => trade.indice === selectedIndice);
+            }
+
+            const winningTrades = filteredTrades.filter(trade => trade.profitLoss > 0).length;
+            const winRate = (winningTrades / filteredTrades.length) * 100 || 0;
+            
+            winRateSpan.textContent = winRate.toFixed(2);
+            tradeCountSpan.textContent = filteredTrades.length;
+            
+            updateChart(filteredTrades);
+        }
+
+        function updateChart(filteredTrades) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            const labels = filteredTrades.map(trade => trade.date);
+            const data = filteredTrades.map(trade => trade.profitLoss);
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Performance des trades',
+                        data: data,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
