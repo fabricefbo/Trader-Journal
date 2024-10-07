@@ -1,11 +1,7 @@
-<html><head><base href="https://journal-trading-pro.com/">
+ <html><head><base href="https://journal-trading-pro.com/">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Deriv Journal de Trading Professionnel avec Authentification</title>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Deriv Journal de Trading Professionnel</title>
 <style>
     body {
         font-family: 'Arial', sans-serif;
@@ -174,33 +170,8 @@
         border: 1px solid #bdc3c7;
         border-radius: 4px;
     }
-    .auth-container {
-        background-color: white;
-        padding: 20px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-    .auth-buttons {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-    }
-    .auth-buttons button {
-        flex: 1;
-        margin: 0 5px;
-    }
-    #userEmail {
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-    #logoutBtn {
-        background-color: #e74c3c;
-    }
-    #logoutBtn:hover {
-        background-color: #c0392b;
-    }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
@@ -208,15 +179,6 @@
     </header>
     
     <div class="container">
-        <div class="auth-container">
-            <div id="userEmail"></div>
-            <div id="authButtons" class="auth-buttons">
-                <button id="loginBtn">Se connecter</button>
-                <button id="signupBtn">S'inscrire</button>
-            </div>
-            <button id="logoutBtn" style="display: none;">Se déconnecter</button>
-        </div>
-
         <div class="main-content">
             <aside class="sidebar">
                 <h2>Performance</h2>
@@ -377,22 +339,6 @@
     </div>
 
     <script>
-        // Configuration Firebase (à remplacer par vos propres détails de configuration)
-        const firebaseConfig = {
-            apiKey: "VOTRE_API_KEY",
-            authDomain: "VOTRE_AUTH_DOMAIN",
-            projectId: "VOTRE_PROJECT_ID",
-            storageBucket: "VOTRE_STORAGE_BUCKET",
-            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-            appId: "VOTRE_APP_ID"
-        };
-
-        // Initialiser Firebase
-        firebase.initializeApp(firebaseConfig);
-
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
         let trades = [];
         const tradeForm = document.getElementById('tradeForm');
         const tradeHistory = document.getElementById('tradeHistory').getElementsByTagName('tbody')[0];
@@ -402,12 +348,6 @@
         const historyIndiceFilter = document.getElementById('historyIndiceFilter');
         const historyTimeFilter = document.getElementById('historyTimeFilter');
         let performanceChart;
-
-        const loginBtn = document.getElementById('loginBtn');
-        const signupBtn = document.getElementById('signupBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userEmail = document.getElementById('userEmail');
-        const authButtons = document.getElementById('authButtons');
 
         // Modal elements
         const modal = document.getElementById('imageModal');
@@ -441,60 +381,6 @@
             }
         }
 
-        // Fonction pour mettre à jour l'interface utilisateur en fonction de l'état de connexion
-        function updateUI(user) {
-            if (user) {
-                userEmail.textContent = `Connecté en tant que : ${user.email}`;
-                authButtons.style.display = 'none';
-                logoutBtn.style.display = 'block';
-                // Charger les trades de l'utilisateur depuis Firestore
-                loadUserTrades(user.uid);
-            } else {
-                userEmail.textContent = '';
-                authButtons.style.display = 'flex';
-                logoutBtn.style.display = 'none';
-                // Réinitialiser les trades à un tableau vide
-                trades = [];
-                updateTradeHistory();
-                updatePerformance();
-            }
-        }
-
-        // Surveiller les changements d'état d'authentification
-        auth.onAuthStateChanged(updateUI);
-
-        // Fonction de connexion
-        loginBtn.addEventListener('click', () => {
-            const email = prompt("Entrez votre email :");
-            const password = prompt("Entrez votre mot de passe :");
-            auth.signInWithEmailAndPassword(email, password)
-                .catch(error => alert("Erreur de connexion : " + error.message));
-        });
-
-        // Fonction d'inscription
-        signupBtn.addEventListener('click', () => {
-            const email = prompt("Entrez votre email :");
-            const password = prompt("Choisissez un mot de passe :");
-            auth.createUserWithEmailAndPassword(email, password)
-                .catch(error => alert("Erreur d'inscription : " + error.message));
-        });
-
-        // Fonction de déconnexion
-        logoutBtn.addEventListener('click', () => {
-            auth.signOut();
-        });
-
-        // Fonction pour charger les trades de l'utilisateur depuis Firestore
-        function loadUserTrades(userId) {
-            db.collection('users').doc(userId).collection('trades').get()
-                .then(querySnapshot => {
-                    trades = querySnapshot.docs.map(doc => doc.data());
-                    updateTradeHistory();
-                    updatePerformance();
-                })
-                .catch(error => console.error("Erreur lors du chargement des trades :", error));
-        }
-
         tradeForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -508,23 +394,14 @@
                 notes: document.getElementById('notes').value
             };
             
-            const user = auth.currentUser;
-            if (user) {
-                db.collection('users').doc(user.uid).collection('trades').add(newTrade)
-                    .then(() => {
-                        trades.push(newTrade);
-                        updateTradeHistory();
-                        updatePerformance();
-                        tradeForm.reset();
-                        document.getElementById('startCapturePreview').src = "";
-                        document.getElementById('startCapturePreview').style.display = 'none';
-                        document.getElementById('endCapturePreview').src = "";
-                        document.getElementById('endCapturePreview').style.display = 'none';
-                    })
-                    .catch(error => console.error("Erreur lors de l'ajout du trade :", error));
-            } else {
-                alert("Vous devez être connecté pour ajouter un trade.");
-            }
+            trades.push(newTrade);
+            updateTradeHistory();
+            updatePerformance();
+            tradeForm.reset();
+            document.getElementById('startCapturePreview').src = "";
+            document.getElementById('startCapturePreview').style.display = 'none';
+            document.getElementById('endCapturePreview').src = "";
+            document.getElementById('endCapturePreview').style.display = 'none';
         });
 
         // Remplir les options d'indices pour le filtre d'historique
